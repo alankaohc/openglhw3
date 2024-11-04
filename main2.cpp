@@ -1,5 +1,14 @@
 
+
+// my include 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include "MyShader.h"
+#include "MyComputeShader.h"
+
+
+
+
 #include "src/RenderWidgets/RenderingOrderExp.h"
 
 // the include of "glad" must be before the "glfw"
@@ -22,6 +31,8 @@
 const int FRAME_WIDTH = 1344;
 const int FRAME_HEIGHT = 756;
 
+
+
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void cursorPosCallback(GLFWwindow* window, double x, double y);
@@ -38,6 +49,41 @@ double PROGRAM_FPS = 0.0;
 double FRAME_MS = 0.0;
 
 
+
+
+
+
+
+// Quad 
+const unsigned int TEXTURE_WIDTH = 1000, TEXTURE_HEIGHT = 1000;
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
 int main() {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -60,51 +106,44 @@ int main() {
 	}
 
 
-	MyShader ourShader("vertexSource.vert", "fragmentSource.frag");
 
-	float vertices[] = {
-		// positions         // colors
-		 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
-		 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top 
-	};
-
-	unsigned int VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	// our work
+	MyShader screenQuad("vertexSource.vert", "fragmentSource.frag");
+	MyComputeShader computeShader("computeSource.comp");
 
 
-	const int NUM_DATA = 4;
-	int* dataBuffer = new int[NUM_DATA];
-	dataBuffer[0] = 0.0;
-	dataBuffer[1] = 1.0;
-	dataBuffer[2] = 0.0;
 
-	GLuint ssboHandle;
-	glGenBuffers(1, &ssboHandle);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboHandle);
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_DATA * sizeof(int),
-		dataBuffer, GL_MAP_READ_BIT);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboHandle);
+	// texture size
+	
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 
 
 	while (!glfwWindowShouldClose(window)) {
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		
+		computeShader.use();
+		glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+		// make sure writing to image has finished before read
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-		ourShader.use();
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		screenQuad.use();
+		screenQuad.setInt("tex", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		renderQuad();
+
 
 		glfwPollEvents();
 		glfwSwapBuffers(window);
