@@ -1,3 +1,5 @@
+
+#include "MyShader.h"
 #include "src/RenderWidgets/RenderingOrderExp.h"
 
 // the include of "glad" must be before the "glfw"
@@ -57,52 +59,40 @@ int main() {
 		return -1;
 	}
 
-	glfwSetKeyCallback(window, keyCallback);
-	glfwSetScrollCallback(window, mouseScrollCallback);
-	glfwSetMouseButtonCallback(window, mouseButtonCallback);
-	glfwSetCursorPosCallback(window, cursorPosCallback);
-	glfwSetFramebufferSizeCallback(window, resizeGL);
 
-	if (initializeGL() == false) {
-		glfwTerminate();
-		return 0;
-	}
+	MyShader ourShader("vertexSource.vert", "fragmentSource.frag");
 
-#ifdef IMGUI_ENABLED
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	(void)io;
-	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 430");
-#endif // IMGUI_ENABLED
+	float vertices[] = {
+		// positions         // colors
+		 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
+		 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top 
+	};
+
+	unsigned int VBO, VAO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 
-#ifdef VSYNC_DISABLED
-	glfwSwapInterval(0);
-#endif // VSYNC_DISABLED
 
-	double previousTimeStamp = glfwGetTime();
-	int frameCounter = 0;
 	while (!glfwWindowShouldClose(window)) {
-		// ===============================
-		const double timeStamp = glfwGetTime();
-		const double deltaTime = timeStamp - previousTimeStamp;
-		if (deltaTime >= 1.0) {
-			PROGRAM_FPS = frameCounter / deltaTime;
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-			// reset
-			frameCounter = 0;
-			previousTimeStamp = timeStamp;
-		}
-		frameCounter = frameCounter + 1;
-		// ===============================
+		ourShader.use();
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glfwPollEvents();
-
-		updateState();
-		paintGL();
 		glfwSwapBuffers(window);
 	}
 
