@@ -83,6 +83,20 @@ int main() {
 	glEnableVertexAttribArray(1);
 
 
+	const int NUM_DATA = 4;
+	int* dataBuffer = new int[NUM_DATA];
+	dataBuffer[0] = 0.0;
+	dataBuffer[1] = 1.0;
+	dataBuffer[2] = 0.0;
+
+	GLuint ssboHandle;
+	glGenBuffers(1, &ssboHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_DATA * sizeof(int),
+		dataBuffer, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboHandle);
+
+
 
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
