@@ -49,8 +49,12 @@ double PROGRAM_FPS = 0.0;
 double FRAME_MS = 0.0;
 
 
+glm::vec4 mouseCursor;
+void mouse_callback(GLFWwindow* window, double x, double y) {
+	mouseCursor.x = x;
+	mouseCursor.y = FRAME_HEIGHT-y;
 
-
+}
 
 
 
@@ -96,6 +100,9 @@ int main() {
 		glfwTerminate();
 		return -1;
 	}
+
+	glfwSetCursorPosCallback(window, mouse_callback);
+
 	glfwMakeContextCurrent(window);
 
 	// load OpenGL function pointer
@@ -140,6 +147,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		
 		computeShader.use();
+		glUniform4fv(1, 1, &mouseCursor[0]);
 		glDispatchCompute(32, 32, 1);
 		// make sure writing to image has finished before read
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);

@@ -4,10 +4,16 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout (binding = 2, rgba32f) uniform readonly image2D srcTex ;
 layout (binding = 3) uniform writeonly image2D dstTex ;
+layout (location = 1) uniform vec4 mouseCursor;
+
 
 void main() {
     ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
-    vec4 srcPixel = imageLoad(srcTex, uv) ;
-    imageStore(dstTex, uv, srcPixel) ;
+    vec4 srcPixel = imageLoad(srcTex, uv);
+    float d = length(uv - mouseCursor.xy);
+    float m = max(100.0 - d, 0.0) / 100.0;
+    vec4 color = mix(vec4(0.2, 0.2, 0.2, 1.0), srcPixel, m);
+
+    imageStore(dstTex, uv, color) ;
 
 }
