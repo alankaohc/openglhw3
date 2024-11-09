@@ -28,8 +28,8 @@
 #pragma comment (lib, "lib-vc2015\\glfw3.lib")
 #pragma comment(lib, "assimp-vc141-mt.lib")
 
-const int FRAME_WIDTH = 1344;
-const int FRAME_HEIGHT = 756;
+const int FRAME_WIDTH = 500;
+const int FRAME_HEIGHT = 500;
 
 
 
@@ -105,43 +105,51 @@ int main() {
 		return -1;
 	}
 
-
-
-	// our work
+	// my shaders
 	MyShader screenQuad("vertexSource.vert", "fragmentSource.frag");
 	MyComputeShader computeShader("computeSource.comp");
 
 
-
-	// texture size
+	// load image
+	int width, height, comp;
+	stbi_uc* img = stbi_load("container.jpg", &width, &height, &comp, 3);
 	
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+	// initialize source texture
+	GLuint srcTexHandle;
+	glGenTextures(1, &srcTexHandle);
+	glBindTexture(GL_TEXTURE_2D, srcTexHandle);
+	// the internal format must be 4-channel
+	// if we want to use it as image2D in compute shader
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
 
-	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	// initialize EMPTY target texture
+	GLuint dstTexHandle;
+	glGenTextures(1, &dstTexHandle);
+	glBindTexture(GL_TEXTURE_2D, dstTexHandle);
+	// the internal format must be 4-channel
+	// if we want to use it as image2D in compute shader
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, 512, 512);
+	
+
+	// bind textures to the compute shader as image2D
+	glBindImageTexture(3, dstTexHandle, 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, srcTexHandle, 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
 
 
 
 	while (!glfwWindowShouldClose(window)) {
 		
 		computeShader.use();
-		glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+		glDispatchCompute(32, 32, 1);
 		// make sure writing to image has finished before read
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		screenQuad.use();
-		screenQuad.setInt("tex", 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		screenQuad.setInt("tex", 4);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, dstTexHandle);
 		renderQuad();
 
 
