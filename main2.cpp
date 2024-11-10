@@ -28,8 +28,9 @@
 #pragma comment (lib, "lib-vc2015\\glfw3.lib")
 #pragma comment(lib, "assimp-vc141-mt.lib")
 
-const int FRAME_WIDTH = 500;
-const int FRAME_HEIGHT = 500;
+const int FRAME_WIDTH = 600;
+const int FRAME_HEIGHT = 600;
+
 
 
 
@@ -59,7 +60,9 @@ void mouse_callback(GLFWwindow* window, double x, double y) {
 
 
 // Quad 
-const unsigned int TEXTURE_WIDTH = 1000, TEXTURE_HEIGHT = 1000;
+const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+const int NUM_TEXTURE = 3;
+
 unsigned int quadVAO = 0;
 //unsigned int quadVBO;
 unsigned int ssboHandle;
@@ -68,11 +71,11 @@ void initQuad()
 {
     // ------------------------------------------------------------------
     float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        // positions          // texture coords
+         0.5f,  0.5f, 0.0f,     1.0f, 1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 1.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, 1.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 1.0f,   // top left 
     };
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 2,  // first Triangle
@@ -92,64 +95,47 @@ void initQuad()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(6);
-    // color attribute
-    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(7);
+   
     // texture coord attribute
-    glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(8);
-
-    unsigned int TexBufferA;
-    glGenTextures(1, &TexBufferA);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TexBufferA);
 
 
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+    unsigned char* textureArrayData = stbi_load("church.png", &width, &height, &nrChannels, 0);
+    if (textureArrayData) { std::cout << "loading successful" << std::endl; }
+    //stbi_image_free(textureArrayData);
+    if (width != TEXTURE_WIDTH) {
+        std::cout << "width error: " << width << std::endl;
     }
-    else {
-        std::cout << "load image failed" << std::endl;
+    if (height != TEXTURE_HEIGHT) {
+        std::cout << "height error:" << height << std::endl;
     }
-    stbi_image_free(data);
-    glBindTexture(GL_TEXTURE_2D, 0);
 
-    unsigned int TexBufferB;
-    glGenTextures(1, &TexBufferB);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, TexBufferB);
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* data2 = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
-    if (data2) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else {
-        std::cout << "load image failed" << std::endl;
-    }
-    stbi_image_free(data2);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    unsigned int textureArrayHandle;
+    glGenTextures(1, &textureArrayHandle);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayHandle);
 
+    // the internal format for glTexStorageXD must be "Sized Internal Formats¡§
+    // max mipmap level = log2(1024) + 1 = 11
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, NUM_TEXTURE);
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1, TEXTURE_WIDTH, TEXTURE_HEIGHT, 1, GL_RGBA,GL_UNSIGNED_BYTE, textureArrayData);
+    //glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, NUM_TEXTURE, GL_RGBA, GL_UNSIGNED_BYTE, textureArrayData);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TexBufferA);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, TexBufferB);
+    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // IMPORTANT !! Use mipmap for the foliage rendering
+    //glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
 
     glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-    
 
 }
 

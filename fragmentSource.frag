@@ -1,14 +1,18 @@
 #version 450 core
 
 
-in vec2 TexCoord;
+// the input from rasterizer
+in vec3 TexCoord;
+out vec4 fragColor;
+uniform sampler2DArray albedoTextureArray;
 
-uniform sampler2D ourTexture;
-uniform sampler2D ourFace;
 
-out vec4 FragColor;
 
-void main() {
-   //FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-   FragColor = mix(texture(ourTexture, TexCoord), texture(ourFace, TexCoord), 0.2);;
+void main(){
+	// once the sampler is sampler2DArray, the uv must be vec3
+	vec4 texel = texture(albedoTextureArray, TexCoord) ;
+	// discard the transparent texel
+
+	// output color
+	fragColor = texel;
 }
