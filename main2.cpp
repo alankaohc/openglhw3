@@ -61,28 +61,36 @@ void mouse_callback(GLFWwindow* window, double x, double y) {
 // Quad 
 const unsigned int TEXTURE_WIDTH = 1000, TEXTURE_HEIGHT = 1000;
 unsigned int quadVAO = 0;
-unsigned int quadVBO;
+//unsigned int quadVBO;
+unsigned int ssboHandle;
+
 void renderQuad()
 {
 	if (quadVAO == 0)
 	{
-		float quadVertices[] = {
-			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+
+
+		GLfloat vertices[] = {
+			// x, y, z positions for each vertex
+		   -0.5f,  -0.5f, 0.0f, 0.0f,
+		   -0.5f,   0.5f, 0.0f, 0.0f,
+			0.5f,  -0.5f, 0.0f, 0.0f, 
+			0.5,    0.5,  0.0f, 0.0f,
+
+			// Add as many vertices as needed
 		};
+
 		// setup plane VAO
 		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
 		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+		GLuint ssbo;
+		glGenBuffers(1, &ssbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+		//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_MAP_READ_BIT);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);  // Bind to buffer binding point 0
+
 	}
 	glBindVertexArray(quadVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -114,50 +122,19 @@ int main() {
 
 	// my shaders
 	MyShader screenQuad("vertexSource.vert", "fragmentSource.frag");
-	MyComputeShader computeShader("computeSource.comp");
+	//MyComputeShader computeShader("computeSource.comp");
 
 
-	// load image
-	int width, height, comp;
-	stbi_uc* img = stbi_load("container.jpg", &width, &height, &comp, 3);
 	
-	// initialize source texture
-	GLuint srcTexHandle;
-	glGenTextures(1, &srcTexHandle);
-	glBindTexture(GL_TEXTURE_2D, srcTexHandle);
-	// the internal format must be 4-channel
-	// if we want to use it as image2D in compute shader
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
-
-	// initialize EMPTY target texture
-	GLuint dstTexHandle;
-	glGenTextures(1, &dstTexHandle);
-	glBindTexture(GL_TEXTURE_2D, dstTexHandle);
-	// the internal format must be 4-channel
-	// if we want to use it as image2D in compute shader
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, 512, 512);
-	
-
-	// bind textures to the compute shader as image2D
-	glBindImageTexture(3, dstTexHandle, 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, srcTexHandle, 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
-
 
 
 	while (!glfwWindowShouldClose(window)) {
 		
-		computeShader.use();
-		glUniform4fv(1, 1, &mouseCursor[0]);
-		glDispatchCompute(32, 32, 1);
-		// make sure writing to image has finished before read
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		screenQuad.use();
-		screenQuad.setInt("tex", 4);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, dstTexHandle);
 		renderQuad();
 
 
