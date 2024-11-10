@@ -1,22 +1,29 @@
-#version 430 core
+#version 450 core
 
 //layout (location = 0) in vec3 aPos;
+out vec4 color;
 
-
-
-struct vertex4 {
-    float x;
-    float y;
-    float z;
-    float w;
+struct ssbo_vertices {
+	float x;
+	float y;
+	float z;
+	float w;
 };
 
-layout(std430, binding = 0) buffer VertexData {
-    vertex4 positions[];
+layout (std430, binding=1) buffer layoutName {
+	ssbo_vertices data[];
 };
 
-
+layout (std430, binding=2) buffer layoutName2 {
+	ssbo_vertices data2[];
+};
+	
 void main()
 {
-    gl_Position = vec4(positions[gl_VertexID].x, positions[gl_VertexID].y, positions[gl_VertexID].z, 1.0);
+    gl_Position = vec4(data2[gl_VertexID].x, data2[gl_VertexID].y, data2[gl_VertexID].z, 1.0);
+
+	if (data2[2].x == 0.5)
+		color = vec4(0.0, 1.0, 0.0, 1.0);
+	else 
+		color = vec4(1.0, 0.0, 0.0, 1.0);
 }

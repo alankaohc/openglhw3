@@ -72,25 +72,57 @@ void renderQuad()
 
 		GLfloat vertices[] = {
 			// x, y, z positions for each vertex
-		   -0.5f,  -0.5f, 0.0f, 0.0f,
-		   -0.5f,   0.5f, 0.0f, 0.0f,
-			0.5f,  -0.5f, 0.0f, 0.0f, 
-			0.5,    0.5,  0.0f, 0.0f,
+		   -0.5f,  -0.5f, 0.0f, 1.0f,
+		   -0.5f,   0.5f, 0.0f, 1.0f,
+			0.5f,  -0.5f, 0.0f, 1.0f, 
+			0.5,    0.5,  0.0f, 1.0f,
 
 			// Add as many vertices as needed
 		};
 
+
+		struct vertex4 {
+			float x;
+			float y;
+			float z;
+			float w;
+		};
+		int num = 4;
+		vertex4* vertices2 = new vertex4[num];
+		for (int i = 0; i < num; i++) {
+			vertices2[i].x = vertices[i* num + 0];
+			vertices2[i].y = vertices[i* num + 1];
+			vertices2[i].z = vertices[i* num + 2];
+			vertices2[i].w = vertices[i* num + 3];
+		}
+		std::cout << vertices2[2].x << std::endl;
+		std::cout << vertices2[2].y << std::endl;
+		std::cout << vertices2[2].z << std::endl;
+		std::cout << vertices2[2].w << std::endl;
+
 		// setup plane VAO
 		glGenVertexArrays(1, &quadVAO);
 		glBindVertexArray(quadVAO);
+
 
 		GLuint ssbo;
 		glGenBuffers(1, &ssbo);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
 		//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 		glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_MAP_READ_BIT);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);  // Bind to buffer binding point 0
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);  // Bind to buffer binding point 0
 
+		GLuint ssbo2;
+		glGenBuffers(1, &ssbo2);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo2);
+		//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(vertex4)* num, vertices2, GL_MAP_READ_BIT);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo2);  // Bind to buffer binding point 0
+
+
+
+
+		
 	}
 	glBindVertexArray(quadVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
