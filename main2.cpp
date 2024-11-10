@@ -118,10 +118,17 @@ void initQuad()
 	drawCommands[1].baseInstance = 0;
 
 	// initialize indirect buffer
-	unsigned int IBO;
+	/*unsigned int IBO;
 	glGenBuffers(1, &IBO);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, IBO);
-	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(drawCommands), drawCommands, GL_DYNAMIC_DRAW);
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(drawCommands), drawCommands, GL_DYNAMIC_DRAW);*/
+	
+	unsigned int SSBO;
+	glGenBuffers(1, &SSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(drawCommands), drawCommands,GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, SSBO);
+
 
 
     unsigned int VBO, VAO, EBO;
@@ -147,7 +154,8 @@ void initQuad()
     glBindVertexArray(VAO); 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, IBO);
+	//glBindBuffer(GL_DRAW_INDIRECT_BUFFER, IBO);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, SSBO);
 
 
 }
