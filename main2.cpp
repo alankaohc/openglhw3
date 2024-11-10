@@ -121,7 +121,10 @@ void initQuad()
 void renderQuad(MyShader& screenQuad) {
     
     screenQuad.use();
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+	int counts[] = { 6, 6 };
+	GLvoid* indices[] = { (GLvoid*)0, (GLvoid*)24 };
+	glMultiDrawElements(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2);
+    //glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 }
 
