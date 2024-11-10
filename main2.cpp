@@ -91,6 +91,38 @@ void initQuad()
 
     };
 
+	struct DrawElementsIndirectCommand {
+		// number of index need to draw
+		GLuint count;
+		// number of instance
+		GLuint instanceCount;
+		// location of the first index
+		GLuint firstIndex;
+		// a constant that is added to each index
+		GLuint baseVertex;
+		// a base instance for fetching instanced vertex attributes
+		GLuint baseInstance;
+	};
+
+	// prepare draw commands
+	DrawElementsIndirectCommand drawCommands[2];
+	drawCommands[0].count = 6;
+	drawCommands[0].instanceCount = 1;
+	drawCommands[0].firstIndex = 0;
+	drawCommands[0].baseVertex = 0;
+	drawCommands[0].baseInstance = 0;
+	drawCommands[1].count = 6;
+	drawCommands[1].instanceCount = 1;
+	drawCommands[1].firstIndex = 6; // offset = firstIndex * sizeof(type)
+	drawCommands[1].baseVertex = 4;
+	drawCommands[1].baseInstance = 0;
+
+	// initialize indirect buffer
+	unsigned int IBO;
+	glGenBuffers(1, &IBO);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, IBO);
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(drawCommands), drawCommands, GL_DYNAMIC_DRAW);
+
 
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -112,8 +144,11 @@ void initQuad()
 
 
 
-    glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindVertexArray(VAO); 
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, IBO);
+
 
 }
 
@@ -121,11 +156,12 @@ void initQuad()
 void renderQuad(MyShader& screenQuad) {
     
     screenQuad.use();
-	int counts[] = { 6, 6 };
-	GLvoid* indices[] = { (GLvoid*)0, (GLvoid*)24 };
-	int baseVertices[] = { 0, 4 };
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (GLvoid*)0, 2, 0);
+	//int counts[] = { 6, 6 };
+	//GLvoid* indices[] = { (GLvoid*)0, (GLvoid*)24 };
+	//int baseVertices[] = { 0, 4 };
 	//glMultiDrawElements(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2);
-	glMultiDrawElementsBaseVertex(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2, baseVertices);
+	//glMultiDrawElementsBaseVertex(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2, baseVertices);
     //glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 }
