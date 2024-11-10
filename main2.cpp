@@ -64,70 +64,106 @@ unsigned int quadVAO = 0;
 //unsigned int quadVBO;
 unsigned int ssboHandle;
 
-void renderQuad()
+void initQuad()
 {
-	if (quadVAO == 0)
-	{
+    // ------------------------------------------------------------------
+    float vertices[] = {
+        // positions          // colors           // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    };
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 2,  // first Triangle
+        2, 3, 0   // second Triangle
+    };
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-		GLfloat vertices[] = {
-			// x, y, z positions for each vertex
-		   -0.5f,  -0.5f, 0.0f, 1.0f,
-		   -0.5f,   0.5f, 0.0f, 1.0f,
-			0.5f,  -0.5f, 0.0f, 1.0f, 
-			0.5,    0.5,  0.0f, 1.0f,
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-			// Add as many vertices as needed
-		};
+    // position attribute
+    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(6);
+    // color attribute
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(7);
+    // texture coord attribute
+    glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(8);
 
-
-		struct vertex4 {
-			float x;
-			float y;
-			float z;
-			float w;
-		};
-		int num = 4;
-		vertex4* vertices2 = new vertex4[num];
-		for (int i = 0; i < num; i++) {
-			vertices2[i].x = vertices[i* num + 0];
-			vertices2[i].y = vertices[i* num + 1];
-			vertices2[i].z = vertices[i* num + 2];
-			vertices2[i].w = vertices[i* num + 3];
-		}
-		std::cout << vertices2[2].x << std::endl;
-		std::cout << vertices2[2].y << std::endl;
-		std::cout << vertices2[2].z << std::endl;
-		std::cout << vertices2[2].w << std::endl;
-
-		// setup plane VAO
-		glGenVertexArrays(1, &quadVAO);
-		glBindVertexArray(quadVAO);
-
-
-		GLuint ssbo;
-		glGenBuffers(1, &ssbo);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-		//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_MAP_READ_BIT);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);  // Bind to buffer binding point 0
-
-		GLuint ssbo2;
-		glGenBuffers(1, &ssbo2);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo2);
-		//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(vertex4)* num, vertices2, GL_MAP_READ_BIT);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo2);  // Bind to buffer binding point 0
+    unsigned int TexBufferA;
+    glGenTextures(1, &TexBufferA);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, TexBufferA);
 
 
 
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "load image failed" << std::endl;
+    }
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-		
-	}
-	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindVertexArray(0);
+    unsigned int TexBufferB;
+    glGenTextures(1, &TexBufferB);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, TexBufferB);
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data2 = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
+    if (data2) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "load image failed" << std::endl;
+    }
+    stbi_image_free(data2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, TexBufferA);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, TexBufferB);
+
+
+    glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    
+
 }
+
+
+void renderQuad(MyShader& screenQuad) {
+    
+    screenQuad.use();
+    glUniform1i(glGetUniformLocation(screenQuad.ID, "ourTexture"), 0);
+    glUniform1i(glGetUniformLocation(screenQuad.ID, "ourFace"), 3);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+}
+
+
 int main() {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -153,22 +189,20 @@ int main() {
 	}
 
 	// my shaders
-	MyShader screenQuad("vertexSource.vert", "fragmentSource.frag");
+    MyShader screenQuad("vertexSource.vert", "fragmentSource.frag");
 	//MyComputeShader computeShader("computeSource.comp");
 
 
-	
+    initQuad();
 
 
 	while (!glfwWindowShouldClose(window)) {
 		
 	
-
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		screenQuad.use();
-		renderQuad();
-
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+        renderQuad(screenQuad);
 
 		glfwPollEvents();
 		glfwSwapBuffers(window);
