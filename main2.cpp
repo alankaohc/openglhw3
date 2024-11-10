@@ -71,16 +71,27 @@ void initQuad()
 {
     // ------------------------------------------------------------------
     float vertices[] = {
-        // positions          // texture coords
-         0.5f,  0.5f, 0.0f,     1.0f, 1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 1.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, 1.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 1.0f,   // top left 
+        // positions          
+         0.8f,  0.8f, 0.0f,     // top right
+         0.8f, -0.2f, 0.0f,     // bottom right
+        -0.2f, -0.2f, 0.0f,     // bottom left
+        -0.2f,  0.8f, 0.0f,     // top left 
+
+		-0.2f,  -0.2f, 0.0f,     // top right
+		 -0.2f, -0.8f, 0.0f,      // bottom right
+		-0.8f, -0.8f, 0.0f,       // bottom left
+		-0.8f,  -0.2f, 0.0f,      // top left 
     };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 2,  // first Triangle
-        2, 3, 0   // second Triangle
+    unsigned int indices[] = {  
+        0, 1, 2,
+        2, 3, 0,
+
+		4, 5, 6,
+		6, 7, 4,
+
     };
+
+
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -95,43 +106,10 @@ void initQuad()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(6);
    
-    // texture coord attribute
-    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(8);
 
-
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* textureArrayData = stbi_load("church.png", &width, &height, &nrChannels, 0);
-    if (textureArrayData) { std::cout << "loading successful" << std::endl; }
-    //stbi_image_free(textureArrayData);
-    if (width != TEXTURE_WIDTH) {
-        std::cout << "width error: " << width << std::endl;
-    }
-    if (height != TEXTURE_HEIGHT) {
-        std::cout << "height error:" << height << std::endl;
-    }
-
-    unsigned int textureArrayHandle;
-    glGenTextures(1, &textureArrayHandle);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayHandle);
-
-    // the internal format for glTexStorageXD must be "Sized Internal Formats¡§
-    // max mipmap level = log2(1024) + 1 = 11
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, NUM_TEXTURE);
-    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1, TEXTURE_WIDTH, TEXTURE_HEIGHT, 1, GL_RGBA,GL_UNSIGNED_BYTE, textureArrayData);
-    //glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, NUM_TEXTURE, GL_RGBA, GL_UNSIGNED_BYTE, textureArrayData);
-
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // IMPORTANT !! Use mipmap for the foliage rendering
-    //glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
 
     glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
@@ -143,9 +121,7 @@ void initQuad()
 void renderQuad(MyShader& screenQuad) {
     
     screenQuad.use();
-    glUniform1i(glGetUniformLocation(screenQuad.ID, "ourTexture"), 0);
-    glUniform1i(glGetUniformLocation(screenQuad.ID, "ourFace"), 3);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 }
 
