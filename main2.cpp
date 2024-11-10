@@ -86,8 +86,8 @@ void initQuad()
         0, 1, 2,
         2, 3, 0,
 
-		4, 5, 6,
-		6, 7, 4,
+		0, 1, 2,
+		2, 3, 0,
 
     };
 
@@ -123,7 +123,9 @@ void renderQuad(MyShader& screenQuad) {
     screenQuad.use();
 	int counts[] = { 6, 6 };
 	GLvoid* indices[] = { (GLvoid*)0, (GLvoid*)24 };
-	glMultiDrawElements(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2);
+	int baseVertices[] = { 0, 4 };
+	//glMultiDrawElements(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2);
+	glMultiDrawElementsBaseVertex(GL_TRIANGLES, counts, GL_UNSIGNED_INT, indices, 2, baseVertices);
     //glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 }
